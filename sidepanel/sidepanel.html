@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aria</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ═══ Header ═══ -->
+    <header class="header">
+      <span class="header-title" id="headerTitle">Aria</span>
+      <span class="header-status" id="headerStatus">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Ready</span>
+      </span>
+      <div class="header-controls">
+        <span class="live-toggle" id="liveToggle">
+          <span class="toggle-label" id="liveLabel">🎙 Live</span>
+          <span class="toggle-switch" id="liveSwitch"><span class="toggle-knob"></span></span>
+          <span class="mic-indicator" id="micIndicator"></span>
+          <span class="voice-speaking" id="voiceSpeaking">🔊</span>
+        </span>
+        <button class="btn-icon" id="btnSettings" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <!-- ═══ Plan Section (hidden until plan created) ═══ -->
+    <section class="plan-section" id="planSection" style="display:none;">
+      <div class="plan-header">
+        <h4>Plan</h4>
+        <div class="plan-controls">
+          <button class="btn btn-sm btn-exec" id="btnExecAll" title="Execute all remaining steps">▶ All</button>
+          <button class="btn btn-sm btn-step" id="btnStep" title="Execute next step">Step</button>
+          <button class="btn btn-sm btn-cancel" id="btnCancel" title="Cancel plan">✕</button>
+        </div>
+      </div>
+      <ul class="plan-list" id="planList"></ul>
+    </section>
+
+    <!-- ═══ Routines Panel (collapsible) ═══ -->
+    <section class="routines-section" id="routinesPanel">
+      <details class="routines-details">
+        <summary class="routines-header">📋 Saved Routines</summary>
+        <ul class="routines-list"></ul>
+      </details>
+    </section>
+
+    <!-- ═══ Chat Messages ═══ -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg system">Ready. Say something or type a command.</div>
+    </div>
+
+    <!-- ═══ Confirmation Overlay ═══ -->
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-box">
+        <p id="confirmMessage"></p>
+        <div class="confirm-actions">
+          <button class="btn btn-confirm" id="btnConfirm">Confirm</button>
+          <button class="btn btn-skip" id="btnSkip">Skip</button>
+          <button class="btn btn-cancel-confirm" id="btnCancelConfirm">Cancel Plan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Chat Input ═══ -->
+    <div class="chat-input-area" id="chatInputArea">
+      <div class="chat-image-strip" id="chatImageStrip"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask Aria anything…" rows="3"></textarea>
+        <button class="btn-send" id="btnSend" title="Send message">➤</button>
+      </div>
+      <div class="chat-input-footer">
+        <div class="chat-input-hint" id="inputHint"></div>
+        <button class="btn-clear-chat" id="btnClearChat" title="Clear chat history">Clear chat</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

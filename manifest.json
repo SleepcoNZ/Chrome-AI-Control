@@ -1,0 +1,67 @@
+{
+  "manifest_version": 3,
+  "name": "Aria — AI Browser Control",
+  "version": "1.0.0",
+  "description": "Full hands-free voice control of your browser via AI. Talk to Aria to navigate, search, read, and control Chrome.",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage",
+    "tts",
+    "contextMenus",
+    "notifications",
+    "bookmarks",
+    "history",
+    "downloads",
+    "tabGroups",
+    "favicon",
+    "browsingData",
+    "sessions"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": [
+        "content/page-reader.js",
+        "content/page-controller.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "settings/settings.html",
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Aria — AI Browser Control"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A"
+      },
+      "description": "Toggle Aria side panel"
+    }
+  }
+}

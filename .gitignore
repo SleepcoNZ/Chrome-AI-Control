@@ -1,0 +1,14 @@
+# Secrets
+secrets.json
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/

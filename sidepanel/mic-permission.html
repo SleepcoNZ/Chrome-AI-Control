@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aria — Microphone Access</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 12px; color: #fff; }
+    p { font-size: .95rem; line-height: 1.5; color: #aab; margin-bottom: 24px; }
+    .mic-icon { font-size: 3rem; margin-bottom: 16px; }
+    button {
+      background: #4361ee;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    button:hover { background: #3a56d4; }
+    button:disabled { background: #555; cursor: default; }
+    .status { margin-top: 20px; font-size: .9rem; }
+    .status.ok { color: #4ade80; }
+    .status.fail { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="mic-icon">🎙️</div>
+    <h1>Aria needs microphone access</h1>
+    <p>Click the button below and <strong>Allow</strong> when Chrome asks for permission. Keep this tab open while using voice input.</p>
+    <button id="grant">Grant Microphone Access</button>
+    <div id="status" class="status"></div>
+  </div>
+  <script src="mic-permission.js"></script>
+</body>
+</html>

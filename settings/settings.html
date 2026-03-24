@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aria — Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="settings-container">
+    <header class="settings-header">
+      <h1>⚙ Aria Settings</h1>
+      <p class="subtitle">Configure your AI browser assistant</p>
+    </header>
+
+    <!-- ── Response Length ───────────────────────────── -->
+    <section class="settings-section">
+      <h2>Response Length</h2>
+      <p class="section-desc">Controls how verbose Aria's spoken and written responses are.</p>
+      <div class="slider-group">
+        <label for="responseLength">Response Length: <strong id="responseLengthLabel">3 — Conversational</strong></label>
+        <input type="range" id="responseLength" min="1" max="10" value="3" step="1">
+        <div class="slider-labels">
+          <span>Very Brief</span>
+          <span>Conversational</span>
+          <span>Moderate</span>
+          <span>Detailed</span>
+          <span>Very Detailed</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── AI Provider ──────────────────────────────── -->
+    <section class="settings-section">
+      <h2>AI Provider</h2>
+      <p class="section-desc">Configure which AI service Aria uses. You need at least one API key.</p>
+
+      <div class="form-group">
+        <label for="primaryProvider">Primary Provider</label>
+        <select id="primaryProvider">
+          <option value="auto">Auto (smart fallback)</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="poe">POE</option>
+          <option value="local">Local / Free (experimental)</option>
+        </select>
+        <span class="field-hint" id="autoHint" style="display:none">Uses the best available provider. Automatically switches if one fails or runs out of credits.</span>
+      </div>
+
+      <div class="provider-card" id="openaiCard">
+        <h3>OpenAI</h3>
+        <div class="form-group">
+          <label for="openaiApiKey">API Key</label>
+          <input type="password" id="openaiApiKey" placeholder="sk-..." autocomplete="off">
+          <button class="btn-toggle-vis" data-target="openaiApiKey">👁</button>
+        </div>
+        <div class="form-group">
+          <label for="openaiModel">Model</label>
+          <select id="openaiModel">
+            <option value="gpt-4o">GPT-4o (recommended)</option>
+            <option value="gpt-4o-mini">GPT-4o Mini (fast/cheap)</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+            <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+            <option value="gpt-4.1-nano">GPT-4.1 Nano (fastest)</option>
+            <option value="o4-mini">o4-mini (reasoning)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="provider-card" id="anthropicCard">
+        <h3>Anthropic</h3>
+        <div class="form-group">
+          <label for="anthropicApiKey">API Key</label>
+          <input type="password" id="anthropicApiKey" placeholder="sk-ant-..." autocomplete="off">
+          <button class="btn-toggle-vis" data-target="anthropicApiKey">👁</button>
+        </div>
+        <div class="form-group">
+          <label for="anthropicModel">Model</label>
+          <select id="anthropicModel">
+            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (recommended)</option>
+            <option value="claude-opus-4-20250514">Claude Opus 4</option>
+            <option value="claude-haiku-3-20250414">Claude Haiku 3.5 (fast)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="provider-card" id="poeCard">
+        <h3>POE (Multi-Model Access)</h3>
+        <div class="form-group">
+          <label for="poeApiKey">API Key</label>
+          <input type="password" id="poeApiKey" placeholder="sk-poe-..." autocomplete="off">
+          <button class="btn-toggle-vis" data-target="poeApiKey">👁</button>
+        </div>
+        <div class="form-group">
+          <label for="poeModel">Default Model</label>
+          <div class="select-with-refresh">
+            <select id="poeModel">
+              <option value="">— enter API key to load models —</option>
+            </select>
+            <button type="button" id="btnRefreshPoeModels" class="btn-sm btn-refresh" title="Refresh models from POE">↻</button>
+          </div>
+          <span class="field-hint" id="poeModelHint"></span>
+          <label class="poe-show-all" id="poeShowAllLabel" style="display:none">
+            <input type="checkbox" id="poeShowAllModels"> Show all <span id="poeModelCount">0</span> models
+          </label>
+        </div>
+      </div>
+
+      <div class="provider-card" id="localCard">
+        <h3>Local / Free AI</h3>
+        <p class="provider-note">Uses Chrome's built-in Prompt API (experimental — requires Chrome 127+ with flags enabled). Limited to Gemini Nano, no vision support. Best for simple commands only.</p>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="localEnabled"> Enable local AI (Gemini Nano)
+          </label>
+          <span class="badge-experimental">Experimental</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TTS (Text-to-Speech) ─────────────────────── -->
+    <section class="settings-section">
+      <h2>Text-to-Speech</h2>
+      <p class="section-desc">Configure how Aria speaks responses aloud.</p>
+
+      <div class="form-group">
+        <label for="ttsProvider">TTS Provider</label>
+        <select id="ttsProvider">
+          <option value="chrome">Chrome Built-in TTS (free)</option>
+          <option value="webspeech">Web Speech API (free)</option>
+          <option value="elevenlabs">ElevenLabs (high quality)</option>
+        </select>
+      </div>
+
+      <div class="provider-card" id="elevenlabsCard">
+        <h3>ElevenLabs</h3>
+        <div class="form-group">
+          <label for="elevenlabsApiKey">API Key</label>
+          <input type="password" id="elevenlabsApiKey" placeholder="xi-..." autocomplete="off">
+          <button class="btn-toggle-vis" data-target="elevenlabsApiKey">👁</button>
+        </div>
+        <div class="form-group">
+          <label for="elevenlabsVoiceId">Voice ID</label>
+          <input type="text" id="elevenlabsVoiceId" placeholder="21m00Tcm4TlvDq8ikWAM" value="21m00Tcm4TlvDq8ikWAM">
+        </div>
+      </div>
+
+      <div class="form-group" id="chromeTtsGroup">
+        <label for="chromeTtsVoice">Chrome TTS Voice</label>
+        <select id="chromeTtsVoice">
+          <option value="">Auto-detect best voice</option>
+        </select>
+        <button class="btn-sm" id="btnRefreshVoices">Refresh Voices</button>
+      </div>
+
+      <div class="slider-group">
+        <label for="ttsSpeakingRate">Speaking Rate: <strong id="ttsSpeakingRateLabel">1.0×</strong></label>
+        <input type="range" id="ttsSpeakingRate" min="0.5" max="2.0" value="1.0" step="0.1">
+      </div>
+
+      <div class="slider-group">
+        <label for="ttsVerbosity">Voice Notifications: <strong id="ttsVerbosityLabel">5 — Default</strong></label>
+        <input type="range" id="ttsVerbosity" min="1" max="8" value="5" step="1">
+        <div class="slider-labels">
+          <span>Very Few</span>
+          <span>All</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STT (Speech-to-Text) ─────────────────────── -->
+    <section class="settings-section">
+      <h2>Speech-to-Text</h2>
+      <p class="section-desc">Web Speech API (free, built-in). Configure silence detection.</p>
+
+      <div class="slider-group">
+        <label for="sttSilenceTimeout">Silence Timeout: <strong id="sttSilenceTimeoutLabel">4.0s</strong></label>
+        <input type="range" id="sttSilenceTimeout" min="2000" max="8000" value="4000" step="500">
+        <div class="slider-labels">
+          <span>2s (fast send)</span>
+          <span>8s (more time to think)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Task Stacking (Plans) ─────────────────────── -->
+    <section class="settings-section">
+      <h2>Task Stacking (Plans)</h2>
+      <p class="section-desc">Configure how Aria handles multi-step tasks. When you chain actions together (e.g. "open Trade Me, search for kettlebells, find the cheapest"), Aria creates a plan and executes each step.</p>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="planAutoExecute" checked> Auto-execute plan
+        </label>
+        <p class="field-hint">When enabled, Aria will immediately start running the plan after creating it. When disabled, you'll see the plan and choose to run all steps or step through manually.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="planConfirmSensitive" checked> Pause for sensitive actions
+        </label>
+        <p class="field-hint">Pauses before actions like form submissions, purchases, or account changes so you can confirm or cancel.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="planShowStepDetail" checked> Show step-by-step detail
+        </label>
+        <p class="field-hint">Show progress messages in chat as each step runs. Turn off for a cleaner chat with just the final result.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="planNotifyOnComplete" checked> Notify when plan completes
+        </label>
+        <p class="field-hint">Show a browser notification when a multi-step plan finishes, useful if you've switched to another tab.</p>
+      </div>
+
+      <div class="slider-group">
+        <label for="planDelayBetweenSteps">Delay Between Steps: <strong id="planDelayLabel">2s</strong></label>
+        <input type="range" id="planDelayBetweenSteps" min="1" max="10" value="2" step="1">
+        <div class="slider-labels">
+          <span>1s (fast)</span>
+          <span>10s (cautious)</span>
+        </div>
+        <p class="field-hint">Time to wait between steps for pages to load. Slower connections may need a higher value.</p>
+      </div>
+
+      <div class="slider-group">
+        <label for="planMaxActionsPerStep">Max Actions Per Step: <strong id="planMaxActionsLabel">8</strong></label>
+        <input type="range" id="planMaxActionsPerStep" min="3" max="15" value="12" step="1">
+        <div class="slider-labels">
+          <span>3 (simple)</span>
+          <span>15 (complex)</span>
+        </div>
+        <p class="field-hint">How many AI actions (type, click, scroll, etc.) a single step can chain together. Higher = more capable but uses more AI credits.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="planMaxSteps">Maximum Plan Steps</label>
+        <input type="number" id="planMaxSteps" min="2" max="30" value="30">
+        <p class="field-hint">Maximum number of steps Aria can create in a single plan.</p>
+      </div>
+    </section>
+
+    <!-- ── General ──────────────────────────────────── -->
+    <section class="settings-section">
+      <h2>General</h2>
+
+      <div class="form-group">
+        <label for="personaName">Assistant Name</label>
+        <input type="text" id="personaName" value="Aria" placeholder="Aria">
+      </div>
+
+      <div class="form-group">
+        <label for="personaTone">Personality Tone</label>
+        <select id="personaTone">
+          <option value="friendly">Friendly</option>
+          <option value="casual">Casual</option>
+          <option value="professional">Professional</option>
+          <option value="formal">Formal</option>
+          <option value="sarcastic">Sarcastic / Witty</option>
+          <option value="custom_0" class="custom-tone-option" style="display:none">Custom 1</option>
+          <option value="custom_1" class="custom-tone-option" style="display:none">Custom 2</option>
+          <option value="custom_2" class="custom-tone-option" style="display:none">Custom 3</option>
+        </select>
+      </div>
+
+      <!-- Custom Personalities -->
+      <div id="customPersonalitiesSection" class="form-group">
+        <label>Custom Personalities <small>(up to 3, max 300 words each)</small></label>
+
+        <div id="customPersonalityList"></div>
+
+        <button type="button" id="addCustomPersonality" class="btn btn-sm">+ Add Custom Personality</button>
+      </div>
+
+      <div class="form-group">
+        <label for="personaExpertise">Areas of Expertise <small>(optional — e.g. "web dev, cooking, finance")</small></label>
+        <input type="text" id="personaExpertise" placeholder="general" autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label for="customSystemPrompt">Custom System Prompt <small>(overrides default persona if set)</small></label>
+        <textarea id="customSystemPrompt" rows="4" placeholder="You are a helpful assistant that..."></textarea>
+      </div>
+    </section>
+
+    <!-- ── Your Details ─────────────────────────────── -->
+    <section class="settings-section">
+      <h2>Your Details (Auto-Fill)</h2>
+      <p class="section-desc">Aria can use these to auto-fill sign-up and registration forms for you. All fields are optional — only fill in what you're comfortable sharing. Data is stored locally on your device, never sent to any server.</p>
+
+      <div class="profile-grid">
+        <div class="form-group">
+          <label for="userFirstName">First Name</label>
+          <input type="text" id="userFirstName" placeholder="John" autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label for="userLastName">Last Name</label>
+          <input type="text" id="userLastName" placeholder="Smith" autocomplete="family-name">
+        </div>
+        <div class="form-group">
+          <label for="userEmail">Email</label>
+          <input type="email" id="userEmail" placeholder="john@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="userPhone">Phone</label>
+          <input type="tel" id="userPhone" placeholder="+64 21 123 4567" autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <label for="userDob">Date of Birth</label>
+          <input type="date" id="userDob" autocomplete="bday">
+        </div>
+        <div class="form-group">
+          <label for="userUsername">Preferred Username</label>
+          <input type="text" id="userUsername" placeholder="johnsmith" autocomplete="username">
+        </div>
+      </div>
+
+      <details class="profile-details">
+        <summary>Address &amp; Work <small>(click to expand)</small></summary>
+        <div class="profile-grid" style="margin-top: 10px">
+          <div class="form-group">
+            <label for="userStreet">Street Address</label>
+            <input type="text" id="userStreet" placeholder="123 Main St" autocomplete="street-address">
+          </div>
+          <div class="form-group">
+            <label for="userCity">City</label>
+            <input type="text" id="userCity" placeholder="Auckland" autocomplete="address-level2">
+          </div>
+          <div class="form-group">
+            <label for="userState">State / Region</label>
+            <input type="text" id="userState" placeholder="Auckland" autocomplete="address-level1">
+          </div>
+          <div class="form-group">
+            <label for="userPostcode">Postcode / ZIP</label>
+            <input type="text" id="userPostcode" placeholder="1010" autocomplete="postal-code">
+          </div>
+          <div class="form-group">
+            <label for="userCountry">Country</label>
+            <input type="text" id="userCountry" placeholder="New Zealand" autocomplete="country-name">
+          </div>
+          <div class="form-group">
+            <label for="userCompany">Company</label>
+            <input type="text" id="userCompany" placeholder="Acme Inc" autocomplete="organization">
+          </div>
+          <div class="form-group">
+            <label for="userJobTitle">Job Title</label>
+            <input type="text" id="userJobTitle" placeholder="Software Engineer" autocomplete="organization-title">
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ── Browsing ─────────────────────────────────── -->
+    <section class="settings-section">
+      <h2>Browsing</h2>
+      <p class="section-desc">Configure browsing behaviour and ad blocking.</p>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="autoClosePopups" checked> Automatically close spam &amp; advert popups
+        </label>
+        <p class="field-hint">Detects and dismisses advertising popups, cookie banners, newsletter sign-ups, and notification permission requests. Does not affect login, checkout, or other functional modals.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="autoHandleCookieConsent" checked> Auto-accept cookie consent banners
+        </label>
+        <p class="field-hint">Automatically clicks "Accept" on cookie consent popups (OneTrust, CookieBot, etc.) so you don't have to. Runs independently of the popup blocker above.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="showScreenshotsInChat"> Show screenshots in chat
+        </label>
+        <p class="field-hint">Display thumbnail screenshots in the chat panel as Aria navigates. Useful for seeing what the AI sees, but increases chat clutter.</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="sessionMemoryEnabled" checked> Enable session memory
+        </label>
+        <p class="field-hint">Lets Aria remember URLs visited and actions taken during this session, providing better context for follow-up questions. Memory is cleared when you restart the extension.</p>
+      </div>
+    </section>
+
+    <!-- ── Save ─────────────────────────────────────── -->
+    <div class="save-bar">
+      <span class="save-status" id="saveStatus"></span>
+      <button class="btn-primary" id="btnSave">Save Settings</button>
+      <button class="btn-secondary" id="btnReset">Reset to Defaults</button>
+    </div>
+  </div>
+
+  <script src="settings.js" type="module"></script>
+</body>
+</html>
