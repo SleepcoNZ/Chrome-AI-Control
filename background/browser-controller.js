@@ -616,7 +616,9 @@ export async function navigateInNewTab(url) {
     }
   }
 
-  const tab = await chrome.tabs.create({ url });
+  const tab = await chrome.tabs.create({ url, active: true });
+  // Ensure the new tab is focused so subsequent screenshots target it
+  await chrome.tabs.update(tab.id, { active: true });
   return { success: true, tabId: tab.id, message: isSearch ? `Searching for "${originalQuery}" in new tab...` : `Opening ${url} in new tab...` };
 }
 

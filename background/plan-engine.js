@@ -465,7 +465,7 @@ async function executeBrowserAction(step, context) {
     const url = urlMatch[0];
     if (hint === 'navigateNewTab' || (descLower.includes('new tab'))) {
       const result = await browser.navigateInNewTab(url);
-      await browser.waitForPageReady(undefined, 8000).catch(() => {});
+      await browser.waitForPageReady(result.tabId, 8000).catch(() => {});
       return { response: result.message || `Opened ${url} in new tab`, status: 'executing', message: result.message };
     }
     if (hint === 'navigate' || descLower.includes('navigate to') || descLower.includes('go to')) {
