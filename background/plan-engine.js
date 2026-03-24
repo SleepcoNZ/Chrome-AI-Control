@@ -68,7 +68,7 @@ export function cancelPlan() {
 
 // ── Create Plan ─────────────────────────────────────────────────
 
-export async function createPlan(task) {
+export async function createPlan(task, imageB64 = null) {
   const settings = await loadSettings();
   const maxSteps = settings.planMaxSteps || DEFAULT_SETTINGS.planMaxSteps;
 
@@ -84,12 +84,17 @@ export async function createPlan(task) {
     }
   } catch {}
 
+  const systemMsg = `You are the planning module for Aria, an AI browser control assistant. Create intelligent multi-method plans. Maximum ${maxSteps} steps.${pageContext}`;
+  const userContent = imageB64
+    ? `The user has provided an image containing instructions or a task description. Analyze the image carefully, extract ALL steps/instructions shown, and create a comprehensive plan to execute them.\n\n${prompt}`
+    : prompt;
+
   const messages = [
-    { role: 'system', content: `You are the planning module for Aria, an AI browser control assistant. Create intelligent multi-method plans. Maximum ${maxSteps} steps.${pageContext}` },
-    { role: 'user', content: prompt },
+    { role: 'system', content: systemMsg },
+    { role: 'user', content: userContent },
   ];
 
-  const resp = await client.sendMessage(messages, { maxTokens: 4096, temperature: 0.4 });
+  const resp = await client.sendMessage(messages, { maxTokens: 4096, temperature: 0.4, imageB64 });
   const parsed = parseJSON(resp.text);
 
   if (!parsed) {
@@ -103,7 +108,7 @@ export async function createPlan(task) {
   let steps = parsed.plan || [];
 
   // Validate & normalize
-  const validMethods = new Set(['web_search', 'ai_knowledge', 'browser_action', 'page_read']);
+  const validMethods = new Set(['web_search', 'ai_knowledge', 'browser_action', 'page_read', 'wait_for_user']);
   steps = steps.slice(0, maxSteps).map((step, i) => ({
     step: i + 1,
     description: step.description || `Step ${i + 1}`,
@@ -111,6 +116,7 @@ export async function createPlan(task) {
     action_hint: step.action_hint || null,
     needs_confirmation: step.needs_confirmation || false,
     depends_on: step.depends_on || null,
+    wait_message: step.wait_message || null,
   }));
 
   currentPlan = {
@@ -159,6 +165,9 @@ export async function executeStep(stepIndex) {
         break;
       case 'page_read':
         result = await executePageRead(step, context);
+        break;
+      case 'wait_for_user':
+        result = await executeWaitForUser(step, context);
         break;
       case 'ai_knowledge':
       default:
@@ -298,6 +307,22 @@ export async function executeAll(onUpdate) {
       return result;
     }
 
+    // Wait-for-user steps pause and ask user to complete a manual task
+    if (result.status === 'needs_confirmation' || result.isWaitForUser) {
+      currentPlan.status = 'paused';
+      currentPlan.pauseReason = 'wait_for_user';
+      if (onUpdate) {
+        onUpdate({
+          type: 'needs_clarification',
+          step: step.step,
+          message: `⏸ ${result.message || step.description}\n\nClick Confirm when you're done, or Skip to move on.`,
+        });
+      }
+      executionLock = false;
+      await persistPlan();
+      return { success: true, status: 'paused', step: step.step, message: result.message };
+    }
+
     // Wait between steps — use smart page-load waiting for browser actions
     if (step.method === 'browser_action') {
       try { await browser.waitForPageReady(undefined, 8000); } catch {}
@@ -336,6 +361,21 @@ export async function confirmStep(action) {
   if (!currentPlan) return { success: false, message: 'No plan' };
 
   if (action === 'confirm') {
+    // For wait_for_user steps, user has completed the task — mark done and advance
+    if (currentPlan.pauseReason === 'wait_for_user') {
+      const step = currentPlan.steps[currentPlan.currentStep];
+      currentPlan.stepResults[step.step] = 'User completed manually';
+      currentPlan.currentStep++;
+      currentPlan.status = 'ready';
+      currentPlan.pauseReason = null;
+      await persistPlan();
+
+      if (currentPlan.currentStep >= currentPlan.steps.length) {
+        currentPlan.status = 'complete';
+        return { success: true, status: 'plan_complete', message: 'All steps completed!' };
+      }
+      return { success: true, message: 'Continuing plan…' };
+    }
     currentPlan.status = 'executing';
     return await executeStep(currentPlan.currentStep);
   } else if (action === 'retry') {
@@ -486,7 +526,7 @@ async function executeBrowserAction(step, context) {
     const client = await getAIClient();
     const messages = [
       { role: 'system', content: BROWSER_AGENT_PROMPT + pageDesc + pageStructure + profileContext + tabContext + (context ? `\n\nContext from previous steps:\n${context}` : '') },
-      { role: 'user', content: `Current task step: ${step.description}\n\nAnalyze the screenshot and page elements to determine the best action. RULES:\n- COMPLETE the full step — don't stop partway.\n- After typing into ANY search box or input: your VERY NEXT action MUST be pressing Enter to submit. Do NOT scroll, do NOT look for a search button — press Enter FIRST. 95% of search boxes submit on Enter. Only click a Search button if you already tried Enter and the page didn't change.\n- If the step says "find the cheapest" or "browse for", scroll through the page, compare what you see, and click the best option.\n- If the step says "open in a new tab", use navigateNewTab.\n- You can take multiple actions per step — type, press Enter, scroll, click — do whatever is needed to finish this step completely.\n\nSCROLLING: If the task involves comparing or finding a superlative (cheapest, best, most, least, etc.), you MUST scroll the ENTIRE page before deciding — do NOT pick from only the first few visible items. Track your best candidate in "thought" as you scroll (e.g. "Best so far: X at $45"). Only click after you've seen ALL items on the page.` },
+      { role: 'user', content: `Current task step: ${step.description}\n\nAnalyze the screenshot and page elements to determine the best action. RULES:\n- COMPLETE the full step — don't stop partway.\n- After typing into ANY search box or input: your VERY NEXT action MUST be pressing Enter to submit. Do NOT scroll, do NOT look for a search button — press Enter FIRST. 95% of search boxes submit on Enter. Only click a Search button if you already tried Enter and the page didn't change.\n- If the step says "find the cheapest" or "browse for", scroll through the page, compare what you see, and click the best option.\n- If the step says "open in a new tab", use navigateNewTab.\n- You can take multiple actions per step — type, press Enter, scroll, click — do whatever is needed to finish this step completely.\n- For FORM FILLING: fill fields you have data for (name, email from profile), tab or click to next field. NEVER fill password fields — leave them empty. If you encounter a password field, CAPTCHA, or payment form, set status to "needs_confirmation" with a message explaining what the user needs to fill in.\n- If the page shows a login wall, CAPTCHA, email verification, or any blocker requiring user action, set status to "needs_confirmation" and describe what the user should do.\n\nSCROLLING: If the task involves comparing or finding a superlative (cheapest, best, most, least, etc.), you MUST scroll the ENTIRE page before deciding — do NOT pick from only the first few visible items. Track your best candidate in "thought" as you scroll (e.g. "Best so far: X at $45"). Only click after you've seen ALL items on the page.` },
     ];
 
     // On subsequent iterations, add action history AND accumulated scroll memory
@@ -524,6 +564,10 @@ async function executeBrowserAction(step, context) {
         status: parsed.status || 'executing',
         message: parsed.message || 'Step complete',
       };
+      // If AI detected something requiring user input, flag it
+      if (parsed.status === 'needs_confirmation') {
+        lastResponse.isWaitForUser = true;
+      }
       break;
     }
 
@@ -627,6 +671,20 @@ async function executeAIKnowledge(step, context) {
     response: analysis,
     status: 'executing',
     message: 'AI analysis complete',
+  };
+}
+
+// ── Wait For User ───────────────────────────────────────────────
+
+async function executeWaitForUser(step) {
+  // Pause execution and ask the user to complete a manual task
+  // (e.g. solve CAPTCHA, enter password, fill personal details, make a choice)
+  const msg = step.wait_message || step.description;
+  return {
+    response: msg,
+    status: 'needs_confirmation',
+    message: msg,
+    isWaitForUser: true,
   };
 }
 

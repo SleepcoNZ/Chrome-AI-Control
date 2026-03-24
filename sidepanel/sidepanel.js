@@ -246,6 +246,15 @@ function sendChat() {
   const lower = text.toLowerCase();
   const matchesPlan = PLAN_TRIGGERS.some(t => lower.startsWith(t) || lower.includes(t));
 
+  // Image-only or image + plan trigger → vision-based plan creation
+  if (images.length && (!text || matchesPlan)) {
+    showThinking('Analyzing image & creating plan…');
+    const payload = { task: text || 'Analyze this image and create a plan to accomplish the tasks shown.' };
+    payload.images = images.map(i => ({ b64: i.b64, mimeType: i.mimeType }));
+    sendSW(MSG_TYPES.CREATE_PLAN, payload);
+    return;
+  }
+
   if (matchesPlan) {
     // Extract plan description after trigger
     let planDesc = '';

@@ -145,6 +145,7 @@ export const PLAN_METHOD_LABELS = {
   web_search:     '🔍 Web Search',
   ai_knowledge:   '💡 AI Knowledge',
   page_read:      '📖 Page Read',
+  wait_for_user:  '⏸ User Action',
 };
 
 // ── Plan Trigger Phrases (voice) ────────────────────────────────
@@ -348,16 +349,25 @@ export const SMART_PLAN_PROMPT = `You are a master planner for Aria, an AI brows
 You have access to these METHODS for each step — choose the best one per step:
 
 METHODS:
-- "browser_action"  → Control the browser via multi-action loop: click, type, press Enter, scroll, navigate, open in new tab, search on-site. Each step can do MULTIPLE actions (type + press Enter, scroll + analyze + click, etc). BEST for: any page interaction, searching on sites, navigating, scrolling through results, finding and clicking items.
+- "browser_action"  → Control the browser via multi-action loop: click, type, press Enter, scroll, navigate, open in new tab, search on-site. Each step can do MULTIPLE actions (type + press Enter, scroll + analyze + click, etc). BEST for: any page interaction, searching on sites, navigating, scrolling through results, finding and clicking items, filling forms.
 - "page_read"       → Read page content and extract structured data (prices, names, URLs, lists). Returns text analysis. BEST for: extracting specific data from the current page for use in the next step.
 - "web_search"      → Open Google search. BEST for: finding products, services, information when not already on a relevant site.
 - "ai_knowledge"    → Use AI reasoning without browser action. BEST for: analysis, comparison, calculations, deciding between options.
+- "wait_for_user"   → Pause execution and ask the user to do something manually (solve CAPTCHA, enter password, fill personal info, make a payment, make a choice the AI can't make). The plan pauses until the user clicks Confirm. Include a "wait_message" field explaining what the user needs to do.
 
 CRITICAL PLANNING PHILOSOPHY:
-- browser_action steps can do MULTIPLE things in one step (the system loops up to 5 actions per step). So "search for X" is ONE step: type + press Enter. "Scroll through results and click cheapest" is ONE step: scroll + analyze + click.
+- browser_action steps can do MULTIPLE things in one step (the system loops up to 12 actions per step). So "search for X" is ONE step: type + press Enter. "Scroll through results and click cheapest" is ONE step: scroll + analyze + click.
 - Don't split naturally connected actions into separate steps. If it's one logical task, it's one step.
 - Each step receives results from all previous steps, so later steps know what happened before.
 - The AI sees screenshots on browser_action steps, so it CAN scroll, read prices, find the cheapest, and click it — all within one step.
+- For complex flows (account creation, multi-page setup), break into logical phases and use wait_for_user wherever the user must provide PRIVATE information (passwords, payment details) or make SUBJECTIVE choices.
+
+COMPLEX TASK PLANNING:
+- When an image or description contains setup instructions (e.g. "create account at X, configure product, get API key"), create a step for EACH logical phase.
+- Use wait_for_user when: the user needs to enter passwords, solve CAPTCHAs, enter payment info, verify email, make choices the AI shouldn't make, or complete any step requiring private credentials.
+- After a wait_for_user step, the next step should verify/check the page state before proceeding.
+- For multi-page workflows (sign up → configure → create product → get settings), each major page transition should be its own step.
+- The AI executing browser_action can fill form fields it has data for (name, email from profile) but should NEVER guess or fill password fields.
 
 COMMON SENSE RULES — CRITICAL:
 - "open X in a new tab" → browser_action with navigateNewTab.
@@ -369,10 +379,11 @@ COMMON SENSE RULES — CRITICAL:
 
 RULES:
 1. Each step gets EXACTLY ONE method.
-2. Order steps logically — but keep the number LOW. Most tasks need 2-4 steps.
+2. Order steps logically — but keep the number LOW. Most tasks need 2-6 steps. Complex setup flows may need more.
 3. A step's "depends_on" marks explicit dependencies, but ALL previous step results are available as context.
 4. Mark sensitive actions (purchases, account changes) with needs_confirmation: true.
 5. ALWAYS prefer fewer, smarter steps over many small steps.
+6. Use wait_for_user for anything requiring private user input (passwords, payment, verification codes).
 
 USER TASK: {task}
 
@@ -385,6 +396,21 @@ Respond with JSON:
     ],
     "clarification_needed": null,
     "message": "I'll open Trade Me, search for the kettlebell, find the cheapest one, and open it for you."
+}
+
+A complex multi-page setup example:
+{
+    "plan": [
+        {"step": 1, "description": "Open lemonsqueezy.com in a new tab", "method": "browser_action", "action_hint": "navigateNewTab"},
+        {"step": 2, "description": "Click Sign Up / Create Account", "method": "browser_action", "action_hint": "click"},
+        {"step": 3, "description": "Please create your account — enter your email, password, and any required details, then click Sign Up.", "method": "wait_for_user", "wait_message": "Please fill in your account details (email, password) and complete sign-up. Click Confirm when done."},
+        {"step": 4, "description": "Verify account was created and navigate to dashboard", "method": "browser_action", "action_hint": "navigate"},
+        {"step": 5, "description": "Create a new store called 'Slumber Co'", "method": "browser_action", "action_hint": "form_fill"},
+        {"step": 6, "description": "Create a new product with specified settings (name, price, license keys)", "method": "browser_action", "action_hint": "form_fill"},
+        {"step": 7, "description": "Navigate to API settings and create an API key", "method": "browser_action", "action_hint": "navigate"},
+        {"step": 8, "description": "Read and extract the Store ID, Product ID, and store URL from the page", "method": "page_read", "depends_on": 7}
+    ],
+    "message": "I'll guide you through the full LemonSqueezy setup."
 }
 
 If you need more information, set clarification_needed to a question string and leave the plan empty.`;

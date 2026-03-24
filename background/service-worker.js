@@ -582,7 +582,8 @@ async function handleDirectResponse(msg, settings, level) {
 async function handleCreatePlan(msg) {
   try {
     broadcast({ type: MSG_TYPES.STATUS_UPDATE, status: 'working', text: 'Creating plan…' });
-    const result = await plan.createPlan(msg.task);
+    const imageB64 = msg.images?.[0]?.b64 || null;
+    const result = await plan.createPlan(msg.task, imageB64);
 
     if (!result.success) {
       broadcast({ type: MSG_TYPES.ERROR, message: result.message });
