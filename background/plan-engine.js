@@ -454,6 +454,27 @@ async function executeBrowserAction(step, context) {
   let lastResponse = null;
   let scrollMemory = '';  // Accumulated observations from scrolling (items seen, best candidates, etc.)
 
+  // ── Direct navigation shortcut ────────────────────────────────
+  // If the step contains a URL and wants navigation, skip AI loop entirely
+  const desc = step.description;
+  const descLower = desc.toLowerCase();
+  const hint = step.action_hint || '';
+  const urlMatch = desc.match(/https?:\/\/[^\s,)]+/i);
+
+  if (urlMatch) {
+    const url = urlMatch[0];
+    if (hint === 'navigateNewTab' || (descLower.includes('new tab'))) {
+      const result = await browser.navigateInNewTab(url);
+      await browser.waitForPageReady(undefined, 8000).catch(() => {});
+      return { response: result.message || `Opened ${url} in new tab`, status: 'executing', message: result.message };
+    }
+    if (hint === 'navigate' || descLower.includes('navigate to') || descLower.includes('go to')) {
+      const result = await browser.navigate(url);
+      await browser.waitForPageReady(undefined, 8000).catch(() => {});
+      return { response: result.message || `Navigated to ${url}`, status: 'executing', message: result.message };
+    }
+  }
+
   for (let i = 0; i < MAX_ACTIONS; i++) {
     const screenshot = await browser.captureScreenshot();
     const pageInfo = await browser.getPageInfo().catch(() => ({}));
@@ -526,7 +547,7 @@ async function executeBrowserAction(step, context) {
     const client = await getAIClient();
     const messages = [
       { role: 'system', content: BROWSER_AGENT_PROMPT + pageDesc + pageStructure + profileContext + tabContext + (context ? `\n\nContext from previous steps:\n${context}` : '') },
-      { role: 'user', content: `Current task step: ${step.description}\n\nAnalyze the screenshot and page elements to determine the best action. RULES:\n- COMPLETE the full step — don't stop partway.\n- After typing into ANY search box or input: your VERY NEXT action MUST be pressing Enter to submit. Do NOT scroll, do NOT look for a search button — press Enter FIRST. 95% of search boxes submit on Enter. Only click a Search button if you already tried Enter and the page didn't change.\n- If the step says "find the cheapest" or "browse for", scroll through the page, compare what you see, and click the best option.\n- If the step says "open in a new tab", use navigateNewTab.\n- You can take multiple actions per step — type, press Enter, scroll, click — do whatever is needed to finish this step completely.\n- For FORM FILLING: fill fields you have data for (name, email from profile), tab or click to next field. NEVER fill password fields — leave them empty. If you encounter a password field, CAPTCHA, or payment form, set status to "needs_confirmation" with a message explaining what the user needs to fill in.\n- If the page shows a login wall, CAPTCHA, email verification, or any blocker requiring user action, set status to "needs_confirmation" and describe what the user should do.\n\nSCROLLING: If the task involves comparing or finding a superlative (cheapest, best, most, least, etc.), you MUST scroll the ENTIRE page before deciding — do NOT pick from only the first few visible items. Track your best candidate in "thought" as you scroll (e.g. "Best so far: X at $45"). Only click after you've seen ALL items on the page.` },
+      { role: 'user', content: `Current task step: ${step.description}\n\nAnalyze the screenshot and page elements to determine the best action. RULES:\n- COMPLETE the full step — don't stop partway. If the step says "click" something, you MUST actually click it — do NOT report done until you have clicked and the page has changed as a result.\n- After typing into ANY search box or input: your VERY NEXT action MUST be pressing Enter to submit. Do NOT scroll, do NOT look for a search button — press Enter FIRST. 95% of search boxes submit on Enter. Only click a Search button if you already tried Enter and the page didn't change.\n- If the step says "find the cheapest" or "browse for", scroll through the page, compare what you see, and click the best option.\n- If the step says "open in a new tab", use navigateNewTab.\n- You can take multiple actions per step — type, press Enter, scroll, click — do whatever is needed to finish this step completely.\n- For FORM FILLING: fill fields you have data for (name, email from profile), tab or click to next field. NEVER fill password fields — leave them empty. If you encounter a password field, CAPTCHA, or payment form, set status to "needs_confirmation" with a message explaining what the user needs to fill in.\n- If the page shows a login wall, CAPTCHA, email verification, or any blocker requiring user action, set status to "needs_confirmation" and describe what the user should do.\n- SEMANTIC MATCHING: If you can't find a button with the exact text mentioned, look for equivalent labels. "Sign Up" = "Get Started" = "Start Free Trial" = "Try Free" = any prominent CTA button. Marketing pages often use "Get started" or "Get started →" instead of "Sign Up".\n\nSCROLLING: If the task involves comparing or finding a superlative (cheapest, best, most, least, etc.), you MUST scroll the ENTIRE page before deciding — do NOT pick from only the first few visible items. Track your best candidate in "thought" as you scroll (e.g. "Best so far: X at $45"). Only click after you've seen ALL items on the page.` },
     ];
 
     // On subsequent iterations, add action history AND accumulated scroll memory

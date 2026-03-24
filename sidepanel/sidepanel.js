@@ -458,20 +458,7 @@ function handlePlanUpdate(msg) {
 
   if (msg.description) {
     const icon = PLAN_METHOD_LABELS[msg.method] || '▶';
-    const msgId = addChat('system', `${icon} Step ${msg.step}: ${msg.description}`);
-
-    // Add inline skip button to active step message
-    const chatEl = document.getElementById(msgId);
-    if (chatEl) {
-      const skipBtn = document.createElement('button');
-      skipBtn.className = 'btn btn-skip-inline';
-      skipBtn.textContent = 'Skip step';
-      skipBtn.addEventListener('click', () => {
-        skipBtn.disabled = true;
-        confirmAction('skip');
-      });
-      chatEl.appendChild(skipBtn);
-    }
+    addChat('system', `${icon} Step ${msg.step}: ${msg.description}`);
   }
 }
 
