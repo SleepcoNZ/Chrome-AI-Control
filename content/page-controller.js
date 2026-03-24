@@ -945,13 +945,40 @@
 
   // ── Helpers ─────────────────────────────────────────────────
 
+  // Synonym groups — if the search text matches any word in a group, all words in that group are tried
+  const SYNONYM_GROUPS = [
+    ['sign up', 'register', 'create account', 'join', 'get started', 'start free trial', 'try for free', 'try it free', 'start here', 'begin'],
+    ['log in', 'sign in', 'access account', 'my account'],
+    ['buy', 'purchase', 'add to cart', 'add to bag', 'buy now', 'order now', 'shop now', 'subscribe'],
+    ['submit', 'send', 'continue', 'next', 'done', 'finish', 'complete', 'confirm'],
+    ['learn more', 'read more', 'see details', 'view', 'explore', 'discover'],
+    ['download', 'get the app', 'install'],
+  ];
+
   function findElementByText(text) {
     const clean = text.toLowerCase().trim();
     const all = document.querySelectorAll('button, a, [role="button"], input[type="submit"], input[type="button"]');
+
+    // Direct match first
     for (const el of all) {
       const elText = (el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase().trim();
       if (elText.includes(clean) || clean.includes(elText)) return el;
     }
+
+    // Synonym fallback — find which group(s) the search text belongs to, then try all synonyms
+    const synonyms = [];
+    for (const group of SYNONYM_GROUPS) {
+      if (group.some(s => clean.includes(s) || s.includes(clean))) {
+        for (const s of group) if (s !== clean) synonyms.push(s);
+      }
+    }
+    for (const syn of synonyms) {
+      for (const el of all) {
+        const elText = (el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase().trim();
+        if (elText.includes(syn) || syn.includes(elText)) return el;
+      }
+    }
+
     return null;
   }
 
