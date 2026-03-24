@@ -244,6 +244,13 @@ function sendChat() {
 
   // Check for plan triggers
   const lower = text.toLowerCase();
+
+  // Intercept "skip step" commands during plan execution
+  if (currentPlan.length && /^(skip\s*(this|current|the)?\s*step|skip\s*it|just\s*skip|skip\s*$)/.test(lower)) {
+    confirmAction('skip');
+    return;
+  }
+
   const matchesPlan = PLAN_TRIGGERS.some(t => lower.startsWith(t) || lower.includes(t));
 
   // Image-only or image + plan trigger → vision-based plan creation
@@ -451,7 +458,20 @@ function handlePlanUpdate(msg) {
 
   if (msg.description) {
     const icon = PLAN_METHOD_LABELS[msg.method] || '▶';
-    addChat('system', `${icon} Step ${msg.step}: ${msg.description}`);
+    const msgId = addChat('system', `${icon} Step ${msg.step}: ${msg.description}`);
+
+    // Add inline skip button to active step message
+    const chatEl = document.getElementById(msgId);
+    if (chatEl) {
+      const skipBtn = document.createElement('button');
+      skipBtn.className = 'btn btn-skip-inline';
+      skipBtn.textContent = 'Skip step';
+      skipBtn.addEventListener('click', () => {
+        skipBtn.disabled = true;
+        confirmAction('skip');
+      });
+      chatEl.appendChild(skipBtn);
+    }
   }
 }
 

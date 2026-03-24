@@ -668,8 +668,8 @@ async function handleConfirmAction(msg) {
     const result = await plan.confirmStep(msg.action);
     broadcast({ type: MSG_TYPES.STEP_RESULT, ...result });
 
-    // After retry or confirm, resume executing remaining steps
-    if ((msg.action === 'retry' || msg.action === 'confirm') && result.status !== 'error' && result.status !== 'plan_complete') {
+    // After retry, confirm, or skip, resume executing remaining steps
+    if ((msg.action === 'retry' || msg.action === 'confirm' || msg.action === 'skip') && result.status !== 'error' && result.status !== 'plan_complete') {
       handleExecuteAll();
     }
   } catch (e) {
