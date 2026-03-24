@@ -385,6 +385,12 @@ RULES:
 5. ALWAYS prefer fewer, smarter steps over many small steps.
 6. Use wait_for_user for anything requiring private user input (passwords, payment, verification codes).
 
+STEP DESCRIPTIONS — IMPORTANT:
+- When writing step descriptions for clicking buttons/links, use INCLUSIVE language that lists common label variants.
+- WRONG: "Click the Sign Up button" (too specific — site may say "Get Started")
+- RIGHT: "Find and click the sign-up button (may say Get Started, Sign Up, Create Account, or similar)"
+- The AI executing the step sees screenshots and will look for the closest matching element, so give it flexibility.
+
 USER TASK: {task}
 
 Respond with JSON:
@@ -402,7 +408,7 @@ A complex multi-page setup example:
 {
     "plan": [
         {"step": 1, "description": "Open lemonsqueezy.com in a new tab", "method": "browser_action", "action_hint": "navigateNewTab"},
-        {"step": 2, "description": "Click Sign Up / Create Account", "method": "browser_action", "action_hint": "click"},
+        {"step": 2, "description": "Find and click the sign-up button (may be labeled Get Started, Sign Up, Create Account, Start Free Trial, or similar)", "method": "browser_action", "action_hint": "click"},
         {"step": 3, "description": "Please create your account — enter your email, password, and any required details, then click Sign Up.", "method": "wait_for_user", "wait_message": "Please fill in your account details (email, password) and complete sign-up. Click Confirm when done."},
         {"step": 4, "description": "Verify account was created and navigate to dashboard", "method": "browser_action", "action_hint": "navigate"},
         {"step": 5, "description": "Create a new store called 'Slumber Co'", "method": "browser_action", "action_hint": "form_fill"},
@@ -454,6 +460,8 @@ Buttons and links on real websites use MANY different labels for the same action
 - **Submit** → "Send", "Go", "Continue", "Next", "Done", "Finish", "Complete", "Confirm"
 - **Download** → "Get the app", "Install", "Get it on...", "Download free"
 If you don't see the exact button text mentioned in the step, ALWAYS look for these equivalent labels, icons, or CTAs that serve the same purpose. Marketing sites especially use creative CTA text — "Get started" is the #1 most common alternative to "Sign Up".
+
+CRITICAL: If the step says "click Sign Up" but you see NO "Sign Up" button, DO NOT report failure. Instead, look at the screenshot and page elements for ANY button/link that would logically lead to account creation — "Get started", "Try free", CTA buttons, etc. Only report failure if there is genuinely NO path to accomplish the step's intent.
 
 ─── TYPE THEN SUBMIT — CRITICAL ───
 After typing text into ANY search box, input field, or form field, you MUST ALWAYS follow up with a submission action IN THE SAME RESPONSE. The priority order is:
