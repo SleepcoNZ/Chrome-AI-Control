@@ -117,6 +117,7 @@ function setupEventListeners() {
   });
 
   $('btnConfirm').addEventListener('click', () => confirmAction('confirm'));
+  $('btnRetry').addEventListener('click', () => confirmAction('retry'));
   $('btnSkip').addEventListener('click', () => confirmAction('skip'));
   $('btnCancelConfirm').addEventListener('click', () => confirmAction('cancel'));
 

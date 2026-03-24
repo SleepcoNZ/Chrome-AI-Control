@@ -223,13 +223,20 @@
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     } else if (tag === 'input' || tag === 'textarea') {
-      // Standard input — clear any pre-populated value first
+      // Standard input — aggressively clear pre-populated / autocomplete values
+
+      // Step 1: Select all existing text via Ctrl+A, then delete it (triggers framework listeners naturally)
+      el.select?.();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', ctrlKey: true, bubbles: true }));
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', code: 'Backspace', keyCode: 8, bubbles: true }));
+      el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Backspace', code: 'Backspace', keyCode: 8, bubbles: true }));
+
+      // Step 2: Force-clear via native setter (handles React/Vue controlled inputs)
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
         tag === 'textarea' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
         'value'
       )?.set;
 
-      // Clear existing value so frameworks (React/Vue) see it reset
       if (nativeInputValueSetter) {
         nativeInputValueSetter.call(el, '');
       } else {
@@ -238,7 +245,7 @@
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
 
-      // Now set the desired text
+      // Step 3: Set the desired text
       if (nativeInputValueSetter) {
         nativeInputValueSetter.call(el, text);
       } else {
@@ -246,6 +253,12 @@
       }
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Step 4: Dismiss any autocomplete dropdown so it doesn't overwrite on Enter
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+      el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+      // Also try to close native autocomplete
+      el.setAttribute('autocomplete', 'off');
     } else {
       // Unknown element — try textContent
       el.textContent = text;

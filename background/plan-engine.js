@@ -338,6 +338,37 @@ export async function confirmStep(action) {
   if (action === 'confirm') {
     currentPlan.status = 'executing';
     return await executeStep(currentPlan.currentStep);
+  } else if (action === 'retry') {
+    // Smart retry: step back, gather page state, re-execute with failure context
+    const failReason = currentPlan.pauseContext || 'Unknown failure';
+
+    // Step was already advanced after execution — move back to the failed step
+    if (currentPlan.currentStep > 0 && currentPlan.pauseReason === 'verification_failed') {
+      currentPlan.currentStep--;
+    }
+
+    // Gather current page state for context-aware retry
+    let pageCtx = '';
+    try {
+      const pageInfo = await browser.getPageInfo();
+      if (pageInfo.success) {
+        pageCtx = `Current page: "${pageInfo.title || ''}" (${pageInfo.url || ''})`;
+      }
+    } catch {}
+
+    const step = currentPlan.steps[currentPlan.currentStep];
+    // Inject retry context into step results so executeBrowserAction sees it
+    currentPlan.stepResults[`_retry_${step.step}`] =
+      `RETRY CONTEXT: Previous attempt of step ${step.step} ("${step.description}") failed because: ${failReason}. ${pageCtx}. ` +
+      `This is a retry — the page may already be partially in the right state. Adapt your approach: ` +
+      `if a search bar has wrong text, clear it first (select all + delete) then type the correct query. ` +
+      `If the page already shows results, verify they match the goal before taking further action.`;
+
+    currentPlan.status = 'executing';
+    currentPlan.pauseReason = null;
+    currentPlan.pauseContext = null;
+
+    return await executeStep(currentPlan.currentStep);
   } else if (action === 'skip') {
     currentPlan.stepResults[currentPlan.steps[currentPlan.currentStep].step] = 'Skipped by user';
     currentPlan.currentStep++;
@@ -656,12 +687,19 @@ async function verifyStepResult(step, result) {
 function buildStepContext(step, stepResults) {
   // Always pass ALL previous step results so the AI has full context
   const parts = [];
-  const allSteps = Object.keys(stepResults).map(Number).sort((a, b) => a - b);
+  const allSteps = Object.keys(stepResults).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
 
   for (const stepNum of allSteps) {
     if (stepNum < step.step && stepResults[stepNum]) {
       parts.push(`── Step ${stepNum} result ──\n${stepResults[stepNum]}`);
     }
+  }
+
+  // Include retry context if present for this step
+  const retryKey = `_retry_${step.step}`;
+  if (stepResults[retryKey]) {
+    parts.push(`── ${stepResults[retryKey]}`);
+    delete stepResults[retryKey]; // consume once
   }
 
   return parts.length ? '\nContext from previous steps:\n' + parts.join('\n\n') : '';
